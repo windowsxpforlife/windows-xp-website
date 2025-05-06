@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>miller's thoughts</title>
+  <link rel="stylesheet" href="https://unpkg.com/xp.css">
+  <style>
+    body { 
+      margin: 2em; 
+      background: url('https://external-preview.redd.it/r6g38aXSaQWtd1KxwJbQ-Fs5jtSVDxX3wtLHJEdqixw.jpg?width=1080&crop=smart&auto=webp&s=87a2c94cb3e1561e2b6abd467ea68d81b9901720') no-repeat center center fixed; 
+      background-size: cover;
+      font-family: sans-serif;
+      color: black;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    textarea { 
+      width: 100%; 
+      resize: none;
+    }
+    .window {
+      margin: 1em 0;
+      width: 600px;
+    }
+    h1 {
+      text-align: center;
+      width: 100%;
+      color: #98ff98;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1em;
+    }
+    input[type="password"] {
+      width: 200px;
+    }
+    .window-body {
+      text-align: center;
+    }
+    .title-bar {
+      text-align: center;
+    }
+    #twitchPreview {
+      width: 100%;
+      height: 180px;
+    }
+  </style>
+</head>
+<body class="window-body">
+  <h1>miller's thoughts</h1>
+
+  <!-- Current Thoughts Section -->
+  <div class="window">
+    <div class="title-bar">
+      <div class="title-bar-text">current thoughts</div>
+    </div>
+    <div class="window-body">
+      <p id="content">Loading content...</p>
+    </div>
+  </div>
+
+  <!-- Edit Thoughts Section -->
+  <div class="window">
+    <div class="title-bar">
+      <div class="title-bar-text">edit thoughts</div>
+    </div>
+    <div class="window-body">
+      <form id="editForm">
+        <textarea name="newContent" rows="5" placeholder="New content here..."></textarea>
+        <input type="password" name="password" placeholder="Enter password" required>
+        <button type="submit">Update Content</button>
+      </form>
+      <p id="message"></p>
+    </div>
+  </div>
+
+  <!-- Previous Thoughts Section -->
+  <div class="window">
+    <div class="title-bar">
+      <div class="title-bar-text">previous thoughts</div>
+    </div>
+    <div class="window-body" id="previousThoughts">
+      Loading previous thoughts...
+    </div>
+  </div>
+
+  <!-- Twitch Preview Section -->
+  <div class="window">
+    <div class="title-bar">
+      <div class="title-bar-text">Twitch Preview</div>
+    </div>
+    <div class="window-body">
+      <iframe
+        id="twitchIframe"
+        src="https://player.twitch.tv/?channel=millertuber&parent=windows-xp-website.onrender.com"
+        height="180"
+        width="320"
+        allowfullscreen
+        frameborder="0">
+      </iframe>
+    </div>
+  </div>
+
+  <script>
+    // Fetch initial content
+    fetch('/content')
+      .then(response => response.text())
+      .then(data => {
+        document.getElementById('content').innerText = data;
+      });
+
+    // Handle form submission
+    document.getElementById('editForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+
+      fetch('/update', {
+        method: 'POST',
+        body: new URLSearchParams(formData)
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Incorrect password or error');
+        return response.text();
+      })
+      .then(message => {
+        document.getElementById('message').innerText = message;
+        return fetch('/content');
+      })
+      .then(response => response.text())
+      .then(updatedContent => {
+        document.getElementById('content').innerText = updatedContent;
+        loadPreviousThoughts();
+      })
+      .catch(error => {
+        document.getElementById('message').innerText = error.message;
+      });
+    });
+
+    // Load previous thoughts
+    function loadPreviousThoughts() {
+      fetch('/previousThoughts')
+        .then(response => response.json())
+        .then(thoughts => {
+          const container = document.getElementById('previousThoughts');
+          container.innerHTML = '';
+          thoughts.forEach(thought => {
+            const entry = document.createElement('details');
+            const summary = document.createElement('summary');
+            summary.textContent = thought.date;
+            const content = document.createElement('p');
+            content.textContent = thought.content;
+            entry.appendChild(summary);
+            entry.appendChild(content);
+            container.appendChild(entry);
+          });
+        });
+    }
+
+    loadPreviousThoughts();
+  </script>
+</body>
+</html>
+
